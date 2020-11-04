@@ -1,0 +1,28 @@
+version: "3.3"
+
+services:
+  influx:
+    environment:
+      - INFLUXDB_ADMIN_USER=root
+      - INFLUXDB_ADMIN_USER_PASSWORD=root
+      #- INFLUXDB_HTTP_FLUX_ENABLED=true
+    ports:
+      - "8086:8086"
+      - "9999:9999"
+    image: "influxdb:latest"
+    container_name: "influx"
+    
+  influx-client:
+    build: ./influx-client
+    container_name: "influx-client"
+    depends_on: 
+      - influx
+      - portainer
+
+  portainer:
+    ports:
+      - "9000:9000"
+    volumes: 
+      - /var/run/docker.sock:/var/run/docker.sock
+    image: "portainer/portainer"
+    container_name: "portainer"
