@@ -42,15 +42,21 @@ class OldInfluxClient {
 
     Thread.sleep(6000); // Wait to let the InfluxDB client write the points asynchronously
 
-    // simple query
+    println("Simple query:")
     printQueryResult("SELECT * FROM h2o_feet LIMIT 10")
 
-    // more complex query, writes the result in "result_measurement"
+    println("subquery example:")
+    printQueryResult("SELECT location FROM (SELECT * FROM h2o_feet LIMIT 10)")
+
+    println("query with function nesting:")
+    printQueryResult("SELECT COUNT(DISTINCT(level_description)) FROM h2o_feet")
+
+    println("more complex query:") //writes the result in "result_measurement"
     runQuery("SELECT water_level INTO result_measurement FROM h2o_feet WHERE location='santa_monica'" +
       " GROUP BY level_description ORDER BY time LIMIT 10 OFFSET 1 SLIMIT 1")
     printQueryResult("SELECT * FROM result_measurement ") //reading from "result_measurement"
 
-    //reading from the continuous query's result
+    println("continuous query's result:")
     printQueryResult("SELECT * FROM mean_water_level ")
 
     influxDB.close();
