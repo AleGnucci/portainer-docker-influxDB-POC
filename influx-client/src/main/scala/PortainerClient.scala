@@ -1,5 +1,5 @@
 import com.google.gson.JsonParser
-import sttp.client3.{HttpURLConnectionBackend, Identity, Request, Response, SttpBackend, UriContext, basicRequest}
+import sttp.client3.{HttpURLConnectionBackend, Request, Response, UriContext, basicRequest}
 
 class PortainerClient {
 

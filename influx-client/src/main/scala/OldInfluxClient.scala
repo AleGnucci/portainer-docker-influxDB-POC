@@ -1,8 +1,12 @@
 import java.util.concurrent.TimeUnit
 
-import org.influxdb.dto.{Point, Query}
-import org.influxdb.{BatchOptions, InfluxDBFactory}
+import Utils.getRandom
+import org.influxdb.dto.{Point, Query, QueryResult}
+import org.influxdb.{BatchOptions, InfluxDB, InfluxDBFactory}
 
+import scala.util.Random
+
+/** Class to test the InfluxDb 1.x APIs */
 class OldInfluxClient {
 
   def runQueries(): Unit = {
@@ -24,41 +28,45 @@ class OldInfluxClient {
     influxDB.enableBatch(BatchOptions.DEFAULTS);
 
     // Write points to InfluxDB.
-    influxDB.write(Point.measurement("h2o_feet")
-      .time(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
-      .tag("location", "santa_monica")
-      .addField("level description", "below 3 feet")
-      .addField("water_level", 2.064d)
-      .build());
+    writeRandomPoints(influxDB)
 
-    influxDB.write(Point.measurement("h2o_feet")
-      .time(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
-      .tag("location", "coyote_creek")
-      .addField("level description", "between 6 and 9 feet")
-      .addField("water_level", 8.12d)
-      .build());
+    // query setup
+    def printQueryResult(query: String): Unit = System.out.println(runQuery(query))
+    def runQuery(query: String): QueryResult = influxDB.query(new Query(query))
 
-    // Wait a few seconds in order to let the InfluxDB client
-    // write your points asynchronously
-    Thread.sleep(5_000L);
+    //continuous query that saves to "mean_water_level"
+    runQuery(s"""CREATE CONTINUOUS QUERY "cq_mean_water_level" ON "$databaseName"
+            BEGIN
+            SELECT mean("water_level") INTO mean_water_level FROM h2o_feet GROUP BY time(5s)
+            END""")
 
-    // Query your data using InfluxQL.
-    val queryResult = influxDB.query(new Query("SELECT * FROM h2o_feet"));
+    Thread.sleep(6000); // Wait to let the InfluxDB client write the points asynchronously
 
-    System.out.println(queryResult);
-    // It will print something like:
-    // QueryResult [results=[Result [series=[Series [name=h2o_feet, tags=null,
-    //      columns=[time, level description, location, water_level],
-    //      values=[
-    //         [2020-03-22T20:50:12.929Z, below 3 feet, santa_monica, 2.064],
-    //         [2020-03-22T20:50:12.929Z, between 6 and 9 feet, coyote_creek, 8.12]
-    //      ]]], error=null]], error=null]
+    // simple query
+    printQueryResult("SELECT * FROM h2o_feet LIMIT 10")
 
-    // Query using Flux
+    // more complex query, writes the result in "result_measurement"
+    runQuery("SELECT water_level INTO result_measurement FROM h2o_feet WHERE location='santa_monica'" +
+      " GROUP BY level_description ORDER BY time LIMIT 10 OFFSET 1 SLIMIT 1")
+    printQueryResult("SELECT * FROM result_measurement ") //reading from "result_measurement"
 
+    //reading from the continuous query's result
+    printQueryResult("SELECT * FROM mean_water_level ")
 
-    // Close it if your application is terminating or you are not using it anymore.
     influxDB.close();
+  }
+
+  private def writeRandomPoints(influxDB: InfluxDB): Unit = {
+    for (_ <- 1 to 100) {
+      Thread.sleep(getRandom(0, 5).toLong) //this makes the point timestamps different form one another
+      val waterLevel = getRandom(0, 9)
+      influxDB.write(Point.measurement("h2o_feet")
+        .time(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
+        .tag("location", if(Random.nextBoolean()) "santa_monica" else "coyote_creek")
+        .addField("level_description", if(waterLevel < 3) "below 3 feet" else "between 6 and 9 feet")
+        .addField("water_level", waterLevel)
+        .build());
+    }
   }
 }
 

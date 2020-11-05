@@ -1,12 +1,13 @@
-import java.util.concurrent.ThreadLocalRandom
-
 import com.influxdb.client.InfluxDBClientFactory
 import com.influxdb.client.QueryApi
 import com.influxdb.client.WriteApi
 import com.influxdb.client.domain.WritePrecision.MS
 
+import Utils._
+
 import scala.jdk.CollectionConverters._
 
+/** Unfinished class, can be used to test the 2.x Influx APIs. */
 class InfluxClient {
 
   def runQueries(): Unit = {
@@ -42,8 +43,6 @@ class InfluxClient {
       Thread.sleep(getRandom(0, 5).toLong) //this makes the point timestamps different form one another
       writeApi.writeRecord(bucket, organization, MS, s"temperature,$location=north value=${getRandom(0, 100)}")
     }
-
-    def getRandom(min: Double, max: Double) = ThreadLocalRandom.current().nextDouble(min, max)
   }
 }
 

@@ -10,3 +10,5 @@ libraryDependencies += "com.softwaremill.sttp.client3" %% "core" % "3.0.0-RC7"
 libraryDependencies += "com.google.code.gson" % "gson" % "2.8.6"
 
 assemblyJarName in assembly := "ats-poc.jar"
+
+unmanagedSourceDirectories in Compile += file("influx-client/src")
