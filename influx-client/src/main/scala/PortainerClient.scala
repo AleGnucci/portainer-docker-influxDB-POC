@@ -13,7 +13,7 @@ class PortainerClient {
       val imageToPull = "nginx:latest"
       pullImage(jwt, endpointId, imageToPull)
       val containerId = createContainerAndGetId(jwt, endpointId, imageToPull)
-      startOrStopContainer(jwt, endpointId, containerId, containerShouldRun = true)
+      //startOrStopContainer(jwt, endpointId, containerId, containerShouldRun = true)
       Thread.sleep(2000) // wait before deleting the container
       startOrStopContainer(jwt, endpointId, containerId, containerShouldRun = false)
       deleteContainer(jwt, endpointId, containerId)

@@ -14,8 +14,6 @@ class InfluxClient {
     //initial setup
     val (token, bucket, org) = ("my-token".toCharArray, "my-bucket", "my-org")
     val influxDBClient = InfluxDBClientFactory.create("http://influx:8086", token, org, bucket)
-    influxDBClient.getOrganizationsApi.createOrganization(org)
-    influxDBClient.getBucketsApi.createBucket(bucket, org)
     val queryApi: QueryApi = influxDBClient.getQueryApi
     val writeApi: WriteApi = influxDBClient.getWriteApi
 
