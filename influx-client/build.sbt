@@ -4,6 +4,8 @@ version := "0.1"
 
 scalaVersion := "2.13.3"
 
+/* using java version of influxdb-client-java because the scala version lacks write support:
+   https://github.com/influxdata/influxdb-client-java/issues/125 */
 libraryDependencies += "org.influxdb" % "influxdb-java" % "2.20" //for 1.x APIs
 libraryDependencies += "com.influxdb" % "influxdb-client-java" % "1.13.0" //for 2.x APIs (Flux)
 libraryDependencies += "com.influxdb" % "flux-dsl" % "1.13.0" //optional Flux dsl

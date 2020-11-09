@@ -19,22 +19,30 @@ class NewInfluxClient extends InfluxClient {
     val (token, bucket, org) = ("my-token", "my-bucket", "my-org")
     val influxDBClient = InfluxDBClientFactory.create("http://influx:8086", token.toCharArray, org, bucket)
     implicit val (queryApi, writeApi) = (influxDBClient.getQueryApi, influxDBClient.getWriteApi)
+    val tasksApi = influxDBClient.getTasksApi
 
-    // Write data
+    // Writes sample data
     writeRandomPoints(bucket, org)
 
-    //prepare some example queries
+    //prepares some example queries
+    //more examples in https://github.com/influxdata/influxdb-client-java/tree/master/examples/src/main/java/example
     val queries = FluxQueryContainer.getQueries(bucket)
 
-    //run the queries as Flux strings (without dsl)
-    EnhancedFlux runAndPrintAll queries //infix notation with conversion from List to varargs
+    //runs the queries as Flux strings (without dsl)
+    EnhancedFlux runAndPrintAll queries
 
-    //run an example query using flux-dsl
+    //runs an example query using flux-dsl
+    //more examples in https://github.com/influxdata/influxdb-client-java/tree/master/flux-dsl
     //simply retrieves 10 temperature points which are not older than 1 day
     println("Flux-dsl query result:" + Flux.from(bucket)
       .filter(measurement().equal("temperature"))
       .range(-1, ChronoUnit.DAYS)
       .sample(10).toString())
+
+    //creates a Task. Tasks replace InfluxDB v1.x continuous queries.
+    //more examples in ITTasksApi.java from https://github.com/influxdata
+    //runs the first query in FluxQueryContainer every 10 seconds
+    tasksApi.createTaskEvery("exampleTask", queries.head, "10s", org)
 
     influxDBClient.close()
   }

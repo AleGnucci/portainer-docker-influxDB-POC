@@ -10,7 +10,7 @@ services:
       - "9999:9999"
     image: "quay.io/influxdb/influxdb:2.0.0-rc"
     volumes: 
-      - "./influx-command.sh:/influx-command.sh"
+      - "./influx-start.sh:/influx-start.sh"
     container_name: "influx"
     command: 
       - /influx-start.sh

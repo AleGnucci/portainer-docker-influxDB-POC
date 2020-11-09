@@ -9,6 +9,6 @@ PASS=password
 influxd run &
 sleep 10
 influx setup -f -b $BUCKET -o $ORG -u $USER -p $PASS -t $TOKEN
-influx auth create -o $ORG -u $USER --read-buckets --write-buckets --read-tasks --read-user -t $TOKEN
+influx auth create -o $ORG -u $USER --read-buckets --write-buckets --read-tasks --write-tasks --read-user -t $TOKEN
 echo "Finished influx setup"
 sleep infinity

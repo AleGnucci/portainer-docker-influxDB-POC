@@ -3,12 +3,12 @@ package influx
 object FluxQueryContainer {
 
   def getQueries(bucket: String): Seq[String] = {
-    val queryStart = s"""from(bucket:"$bucket")"""
+    val queryStart = s"""from(bucket:"$bucket") |> range(start: 0)"""
     val temperatures = s"""$queryStart |> filter(fn: (r) => r._measurement == "temperature")"""
     Seq(
       // simple query (using the extension method "printQueryResult")
       //gets 10 points from the bucket
-      s"""$queryStart |> range(start: 0) |> limit(n: 10)""",
+      s"""$queryStart |> limit(n: 10)""",
 
       //query with filter and union
       //the result is the union of the temperatures from the south with the ones from the north
@@ -31,7 +31,9 @@ object FluxQueryContainer {
 
       //query with aggregateWindow
       //groups the temperatures in 5ms windows and calculates the mean for each window
-      s"""$temperatures |> aggregateWindow(column: "temperature", every: 5ms, fn: mean)""",
+      /* aggregateWindow currently seems to be slow and memory hungry:
+         https://community.influxdata.com/t/aggregatewindow-extremely-slow-and-memory-hungry/11635  */
+      s"""$temperatures |> aggregateWindow(column: "temperature", every: 5ms, fn: mean)""", //FIXME: causes OOM in influx
 
       //DatePart-like query
       //returns all the data with time values in the [9, 18] time range
@@ -50,8 +52,6 @@ object FluxQueryContainer {
       //query with covariance
       //calculates the covariance between time and value
       s"""$temperatures |> covariance(columns: ["_time", "value"]) """)
-
-      //
   }
 
 }
