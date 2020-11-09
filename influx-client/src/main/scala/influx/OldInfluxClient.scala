@@ -1,13 +1,15 @@
+package influx
+
 import java.util.concurrent.TimeUnit
 
-import Utils.getRandom
 import org.influxdb.dto.{Point, Query, QueryResult}
 import org.influxdb.{BatchOptions, InfluxDB, InfluxDBFactory}
+import utils.Utils.getRandom
 
 import scala.util.Random
 
 /** Class to test the InfluxDb 1.x APIs */
-class OldInfluxClient {
+class OldInfluxClient extends InfluxClient  {
 
   def runQueries(): Unit = {
     val (serverURL, username, password) = ("http://influx:8086", "root", "root");

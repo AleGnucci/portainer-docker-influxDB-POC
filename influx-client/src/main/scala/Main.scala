@@ -1,9 +1,13 @@
+import influx.{InfluxClient, NewInfluxClient}
+import portainer.PortainerClient
 
 object Main extends App {
 
+  val influxClient: InfluxClient = NewInfluxClient()
+
   Thread.sleep(10000) // gives time to portainer and influxDb to finish setup
 
-  InfluxClient().runQueries()
+  influxClient.runQueries()
   println("Finished running influx queries")
 
   PortainerClient().useAPIs()

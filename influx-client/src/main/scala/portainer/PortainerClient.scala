@@ -1,3 +1,5 @@
+package portainer
+
 import com.google.gson.JsonParser
 import sttp.client3.{HttpURLConnectionBackend, Request, Response, UriContext, basicRequest}
 

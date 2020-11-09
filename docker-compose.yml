@@ -13,7 +13,7 @@ services:
       - "./influx-command.sh:/influx-command.sh"
     container_name: "influx"
     command: 
-      - /influx-command.sh
+      - /influx-start.sh
     
   influx-client:
     build: ./influx-client
