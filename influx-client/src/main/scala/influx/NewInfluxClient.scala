@@ -9,7 +9,6 @@ import com.influxdb.query.dsl.Flux
 import com.influxdb.query.dsl.functions.restriction.Restrictions.measurement
 import influx.API.EnhancedV2API.Implicits._
 import influx.API.EnhancedV2API._
-import utils.Utils.Implicits.EnhancedFuture
 import utils.Utils.getRandom
 
 import scala.util.Random
@@ -32,8 +31,9 @@ class NewInfluxClient extends InfluxClient {
     //create output bucket
     bucketsApi.createBucket("new-bucket", organizationId)
 
-    // Writes sample data and checks if it succeeds
-    writeRandomPointsAndPrintResult(bucket, org)
+    //writes sample data, waits for completion and checks by counting the data
+    writeRandomPoints(bucket, org)
+    waitAndCheckWrittenData(bucket)
 
     //prepares some example queries (some of these also write to the output bucket)
     //more examples in https://github.com/influxdata/influxdb-client-java/tree/master/examples/src/main/java/example
@@ -63,9 +63,9 @@ class NewInfluxClient extends InfluxClient {
     {influxClient.close(); influxScalaClient.close()}
   }
 
-  private def writeRandomPointsAndPrintResult(bucket: String, organization: String)
-                                             (implicit queryApi: QueryScalaApi, writeApi: WriteApi,
-                                              system: ActorSystem): Unit = {
+  //FIXME: most of the data is null
+  private def writeRandomPoints(bucket: String, organization: String)
+                               (implicit queryApi: QueryScalaApi, writeApi: WriteApi, system: ActorSystem): Unit = {
     def getRandomLocation = if (Random.nextBoolean()) "north" else "south"
     def getRandomMeasurement = if (Random.nextBoolean()) "temperature" else "humidity"
 
@@ -74,9 +74,14 @@ class NewInfluxClient extends InfluxClient {
       s"$getRandomMeasurement,location=$getRandomLocation value=${getRandom(0, 100)}"
     }
     writeApi.writePointsByProducer(bucket, organization, pointProducer, 100)
-    println(s"Amount of successfully written points to $bucket: ")
-    (EnhancedFlux runAndPrintAsync Flux.from(bucket).range(-1, ChronoUnit.DAYS).count().toString)
-      .awaitForTenSeconds
+  }
+
+  private def waitAndCheckWrittenData(bucket: String)(implicit queryApi: QueryScalaApi, writeApi: WriteApi,
+                                        system: ActorSystem): Unit = {
+    writeApi.flush() //flush all pending writes to HTTP
+    Thread.sleep(5000) //wait for influx to finish writing before checking
+    println(s"Amount of points successfully written to $bucket: ")
+    EnhancedFlux runAndPrint Flux.from(bucket).range(-1, ChronoUnit.DAYS).count().toString
   }
 
 }
