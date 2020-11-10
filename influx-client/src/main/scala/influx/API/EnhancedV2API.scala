@@ -8,6 +8,7 @@ import com.influxdb.client.scala.QueryScalaApi
 import com.influxdb.client.{OrganizationsApi, WriteApi}
 import com.influxdb.query.FluxRecord
 import influx.API.EnhancedV2API.Implicits._
+import utils.Utils.Implicits.EnhancedFuture
 import zio._
 import zio.console.putStrLn
 
@@ -17,23 +18,31 @@ import scala.jdk.CollectionConverters._
 object EnhancedV2API {
 
   object EnhancedFlux {
-    def runAndPrintAll(queries: Seq[String])(implicit queryApi: QueryScalaApi, system: ActorSystem): Future[Unit] = {
+
+    def runAndPrintAll(queries: Seq[String])(implicit queryApi: QueryScalaApi, system: ActorSystem): Unit =
+      runAndPrintAllAsync(queries).awaitForTenSeconds
+
+    def runAndPrint(query: String)(implicit queryApi: QueryScalaApi, system: ActorSystem): Unit =
+      runAndPrintAsync(query).awaitForTenSeconds
+
+    def runAndPrintAllAsync(queries: Seq[String])
+                           (implicit queryApi: QueryScalaApi, system: ActorSystem): Future[Unit] = {
       val codeToRun = ZIO.foreach(queries) {query => //sequentially runs all the queries
-        putStrLn(s"query ${queries.indexOf(query)}") *> ZIO.fromFuture(_ => runAndPrint(query))
+        putStrLn(s"query ${queries.indexOf(query)}:") *> ZIO.fromFuture(_ => runAndPrintAsync(query))
       }.unit
       Runtime.default.unsafeRunToFuture(codeToRun)
     }
 
-    def runAndPrint(query: String)(implicit queryApi: QueryScalaApi, system: ActorSystem): Future[Unit] =
-      queryApi.printQueryResult(query)
+    def runAndPrintAsync(query: String)(implicit queryApi: QueryScalaApi, system: ActorSystem): Future[Unit] =
+      queryApi.printQueryResultAsync(query)
 
-    def run(query: String)(implicit queryApi: QueryScalaApi): Source[FluxRecord, NotUsed] = queryApi.query(query)
+    def runAsync(query: String)(implicit queryApi: QueryScalaApi): Source[FluxRecord, NotUsed] = queryApi.query(query)
   }
 
   object Implicits {
 
     implicit class CustomQueryApi(val queryApi: QueryScalaApi) {
-      def printQueryResult(query: String)(implicit system: ActorSystem): Future[Unit] = { //extension method
+      def printQueryResultAsync(query: String)(implicit system: ActorSystem): Future[Unit] = { //extension method
         implicit val executionContext: ExecutionContext = system.dispatcher
         queryApi.query(query).runForeach(record =>
           println(record.getTime + ": " + record.getValueByKey("value"))).map(_ => ())

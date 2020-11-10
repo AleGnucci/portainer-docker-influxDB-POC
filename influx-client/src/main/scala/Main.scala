@@ -7,10 +7,11 @@ object Main extends App {
 
   Thread.sleep(12000) // gives time to portainer and influxDb to finish setup
 
-  influxClient.runQueries()
-  println("Finished running influx queries")
+  influxClient.runExamples()
+  println("Finished running influx queries and tests")
 
   PortainerClient().useAPIs()
   println("Finished using portainer APIs")
 
+  System.exit(0)
 }

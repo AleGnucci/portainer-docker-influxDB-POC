@@ -11,7 +11,7 @@ import scala.util.Random
 /** Class to test the InfluxDb 1.x APIs */
 class OldInfluxClient extends InfluxClient  {
 
-  def runQueries(): Unit = {
+  def runExamples(): Unit = {
     val (serverURL, username, password) = ("http://influx:8086", "root", "root");
     val influxDB = InfluxDBFactory.connect(serverURL, username, password);
 

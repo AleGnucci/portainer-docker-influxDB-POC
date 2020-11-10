@@ -7,12 +7,11 @@ import com.influxdb.client.scala.{InfluxDBClientScalaFactory, QueryScalaApi}
 import com.influxdb.client.{InfluxDBClientFactory, WriteApi}
 import com.influxdb.query.dsl.Flux
 import com.influxdb.query.dsl.functions.restriction.Restrictions.measurement
-import influx.API.EnhancedV2API._
 import influx.API.EnhancedV2API.Implicits._
+import influx.API.EnhancedV2API._
+import utils.Utils.Implicits.EnhancedFuture
 import utils.Utils.getRandom
 
-import scala.concurrent.Await
-import scala.concurrent.duration.DurationInt
 import scala.util.Random
 
 /** Unfinished class, can be used to test the 2.x Influx APIs. */
@@ -20,7 +19,7 @@ class NewInfluxClient extends InfluxClient {
 
   private val (url, token, bucket, org) = ("http://influx:8086", "my-token", "my-bucket", "my-org")
 
-  def runQueries(): Unit = {
+  def runExamples(): Unit = {
     //initial setup
     val influxClient = InfluxDBClientFactory.create(url, token.toCharArray, org, bucket)
     val influxScalaClient = InfluxDBClientScalaFactory.create(url, token.toCharArray, org, bucket)
@@ -40,21 +39,18 @@ class NewInfluxClient extends InfluxClient {
     //more examples in https://github.com/influxdata/influxdb-client-java/tree/master/examples/src/main/java/example
     val queries = FluxQueryContainer.getQueries(bucket, org)
 
-    //runs the queries as Flux strings (without dsl)
-    val queriesResult = EnhancedFlux runAndPrintAll queries
+    //runs the queries as Flux strings (without dsl), waiting for them to finish and print their results
+    EnhancedFlux runAndPrintAll queries
 
     //runs an example query using flux-dsl
     //more examples in https://github.com/influxdata/influxdb-client-java/tree/master/flux-dsl
     //simply retrieves 10 temperature points which are not older than 1 day
+    println("Flux-dsl query result:")
     val constructedQuery = Flux.from(bucket)
       .range(-1, ChronoUnit.DAYS)
       .filter(measurement().equal("temperature"))
       .sample(10).toString
-    println("Flux-dsl query result:")
-    val dslQueryResult = EnhancedFlux runAndPrint constructedQuery
-
-    //wait for the queries to finish (not more than 10 seconds, though)
-    Await.result(queriesResult.flatMap(_ => dslQueryResult), 10000.millis)
+    EnhancedFlux runAndPrint constructedQuery
 
     //creates a Task. Tasks replace InfluxDB v1.x continuous queries.
     //more examples in ITTasksApi.java from https://github.com/influxdata
@@ -64,7 +60,7 @@ class NewInfluxClient extends InfluxClient {
     //wait for the task to run once
     Thread.sleep(6000)
 
-    influxClient.close()
+    {influxClient.close(); influxScalaClient.close()}
   }
 
   private def writeRandomPointsAndPrintResult(bucket: String, organization: String)
@@ -79,7 +75,8 @@ class NewInfluxClient extends InfluxClient {
     }
     writeApi.writePointsByProducer(bucket, organization, pointProducer, 100)
     println(s"Amount of successfully written points to $bucket: ")
-    EnhancedFlux runAndPrint Flux.from(bucket).range(-1, ChronoUnit.DAYS).count().toString
+    (EnhancedFlux runAndPrintAsync Flux.from(bucket).range(-1, ChronoUnit.DAYS).count().toString)
+      .awaitForTenSeconds
   }
 
 }

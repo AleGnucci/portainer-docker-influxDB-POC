@@ -2,6 +2,6 @@ package influx
 
 trait InfluxClient {
 
-  def runQueries(): Unit
+  def runExamples(): Unit
 
 }

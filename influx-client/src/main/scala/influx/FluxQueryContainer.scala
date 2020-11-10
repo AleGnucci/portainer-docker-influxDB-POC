@@ -40,7 +40,7 @@ object FluxQueryContainer {
       //groups the temperatures in 10ms windows and calculates the mean for each window
       /* aggregateWindow currently seems to be slow, memory hungry and can cause an OOM error in influx's process:
          https://community.influxdata.com/t/aggregatewindow-extremely-slow-and-memory-hungry/11635  */
-      s"""$temperatures |> aggregateWindow(column: "_value", every: 10ms, fn: mean)""",
+      s"""$temperatures |> aggregateWindow(column: "_value", every: 10ms, fn: mean) |> limit(n: 100)""",
 
       //query 7 (DatePart-like)
       //returns all the data with time values in the [9, 18] time range
@@ -58,9 +58,9 @@ object FluxQueryContainer {
         |> reduce(fn: (r, accumulator) => ({ sum: r._value + accumulator.sum }), identity: {sum: 0.0})""",
 
       //query 10 with covariance
-      //calculates the covariance between time and value
-      //FIXME: "cannot compute the covariance between different types"
-      s"""$temperatures |> covariance(columns: ["_time", "_value"]) """)
+      //calculates the covariance between the temperatures t and t*2
+      s"""$temperatures |> map(fn: (r) => ({r with times_two: r._value * 2.0}))
+        |> covariance(columns: ["times_two", "_value"])""")
   }
 
 }
