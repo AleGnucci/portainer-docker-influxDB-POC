@@ -11,6 +11,7 @@ libraryDependencies += "com.influxdb" % "influxdb-client-java" % "1.13.0" //for 
 libraryDependencies += "com.influxdb" % "flux-dsl" % "1.13.0" //optional Flux dsl
 libraryDependencies += "com.softwaremill.sttp.client3" %% "core" % "3.0.0-RC7" //http client
 libraryDependencies += "com.google.code.gson" % "gson" % "2.8.6" //json parsing
+libraryDependencies += "com.typesafe.akka" %% "akka-stream" % "2.6.10" //reactive streams
 
 assemblyJarName in assembly := "ats-poc.jar"
 

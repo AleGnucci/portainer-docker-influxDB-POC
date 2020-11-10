@@ -72,7 +72,7 @@ class PortainerClient {
     val request = authorizedRequest(jwt).delete(uri"${getContainerHandlingUrl(endpointId, containerId)}")
     val response = sendRequest(request)
     if(!response.isSuccess) throw new IllegalStateException("Error when deleting container: " + response)
-    println(response) // prints a 204 success status if it's all ok
+    println("Portainer final status code is " + response.code) // prints a 204 success status if it's all ok
   }
 
 }

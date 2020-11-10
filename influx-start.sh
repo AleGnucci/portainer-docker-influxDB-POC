@@ -7,7 +7,8 @@ USER=user
 PASS=password
 
 influxd run &
-sleep 10
+sleep 12 # wait for influxd to start
+# this may be better: wget -S --spider --tries=20 --retry-connrefused --waitretry=5 http://localhost:9999/metrics
 influx setup -f -b $BUCKET -o $ORG -u $USER -p $PASS -t $TOKEN
 influx auth create -o $ORG -u $USER --read-buckets --write-buckets --read-tasks --write-tasks --read-user -t $TOKEN
 echo "Finished influx setup"
