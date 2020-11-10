@@ -34,13 +34,13 @@ object FluxQueryContainer {
 
       //query 5 with group and mean
       //calculates the mean temperature for each location
-      s"""$temperatures |> group(columns: ["location"]) |> mean(column: "value")""",
+      s"""$temperatures |> group(columns: ["location"]) |> mean(column: "_value")""",
 
       //query 6 with aggregateWindow
-      //groups the temperatures in 5ms windows and calculates the mean for each window
+      //groups the temperatures in 10ms windows and calculates the mean for each window
       /* aggregateWindow currently seems to be slow, memory hungry and can cause an OOM error in influx's process:
          https://community.influxdata.com/t/aggregatewindow-extremely-slow-and-memory-hungry/11635  */
-      s"""$temperatures |> aggregateWindow(column: "temperature", every: 5ms, fn: mean)""",
+      s"""$temperatures |> aggregateWindow(column: "_value", every: 10ms, fn: mean)""",
 
       //query 7 (DatePart-like)
       //returns all the data with time values in the [9, 18] time range
@@ -48,18 +48,19 @@ object FluxQueryContainer {
 
       //query 8 with pivot
       //shows the temperatures with the location as row key and time as column key
-      s"""$temperatures |> pivot(rowKey:["location"], columnKey: ["_time"], valueColumn: "value")""",
+      s"""$temperatures |> pivot(rowKey:["location"], columnKey: ["_time"], valueColumn: "_value")""",
 
       //query 9 with a custom function, map and reduce
       //converts the temperatures to fahrenheit and sums them (without using sum())
       //_value is necessary when using map
-      s"""celsiusToFahrenheit = (c) => (c * 9/5) + 32
-        $temperatures  |> map(fn: (r) => ({ _value: celsiusToFahrenheit(c: r.value) }))
-        |> reduce(fn: (r, accumulator) => ({ sum: r._value + accumulator.sum }), identity: {sum: 0})""",
+      s"""celsiusToFahrenheit = (c) => (c * 9.0/5.0) + 32.0
+        $temperatures  |> map(fn: (r) => ({ _value: celsiusToFahrenheit(c: r._value) }))
+        |> reduce(fn: (r, accumulator) => ({ sum: r._value + accumulator.sum }), identity: {sum: 0.0})""",
 
       //query 10 with covariance
       //calculates the covariance between time and value
-      s"""$temperatures |> covariance(columns: ["_time", "value"]) """)
+      //FIXME: "cannot compute the covariance between different types"
+      s"""$temperatures |> covariance(columns: ["_time", "_value"]) """)
   }
 
 }

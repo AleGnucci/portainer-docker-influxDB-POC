@@ -1,33 +1,43 @@
 package influx.API
 
+import akka.NotUsed
+import akka.actor.ActorSystem
+import akka.stream.scaladsl.Source
 import com.influxdb.client.domain.WritePrecision.MS
-import com.influxdb.client.{OrganizationsApi, QueryApi, WriteApi}
+import com.influxdb.client.scala.QueryScalaApi
+import com.influxdb.client.{OrganizationsApi, WriteApi}
+import com.influxdb.query.FluxRecord
 import influx.API.EnhancedV2API.Implicits._
+import zio._
+import zio.console.putStrLn
 
+import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
 
 object EnhancedV2API {
 
   object EnhancedFlux {
-    def runAndPrintAll(queries: Seq[String])(implicit queryApi: QueryApi): Unit = {
-      for (index <- queries.indices) { println(s"query $index:"); runAndPrint(queries(index)) }
+    def runAndPrintAll(queries: Seq[String])(implicit queryApi: QueryScalaApi, system: ActorSystem): Future[Unit] = {
+      val codeToRun = ZIO.foreach(queries) {query => //sequentially runs all the queries
+        putStrLn(s"query ${queries.indexOf(query)}") *> ZIO.fromFuture(_ => runAndPrint(query))
+      }.unit
+      Runtime.default.unsafeRunToFuture(codeToRun)
     }
 
-    def runAndPrint(query: String)(implicit queryApi: QueryApi): Unit = queryApi.printQueryResult(query)
+    def runAndPrint(query: String)(implicit queryApi: QueryScalaApi, system: ActorSystem): Future[Unit] =
+      queryApi.printQueryResult(query)
 
-    def run(query: String)(implicit queryApi: QueryApi): Unit = queryApi.query(query)
+    def run(query: String)(implicit queryApi: QueryScalaApi): Source[FluxRecord, NotUsed] = queryApi.query(query)
   }
 
   object Implicits {
 
-    implicit class CustomQueryApi(val queryApi: QueryApi) { //TODO: use akka streams and make this async
-      def printQueryResult(query: String): Unit = //extension method for QueryApi class
-        for (fluxTable <- queryApi.query(query).asScala) {
-          //println(s"Table with group key ${fluxTable.getGroupKey} :")
-          for (fluxRecord <- fluxTable.getRecords.asScala) {
-            println(fluxRecord.getTime + ": " + fluxRecord.getValueByKey("value"))
-          }
-        }
+    implicit class CustomQueryApi(val queryApi: QueryScalaApi) {
+      def printQueryResult(query: String)(implicit system: ActorSystem): Future[Unit] = { //extension method
+        implicit val executionContext: ExecutionContext = system.dispatcher
+        queryApi.query(query).runForeach(record =>
+          println(record.getTime + ": " + record.getValueByKey("value"))).map(_ => ())
+      }
     }
 
     implicit class CustomWriteApi(val writeApi: WriteApi) {
