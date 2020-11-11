@@ -2,6 +2,7 @@ package portainer
 
 import com.google.gson.JsonParser
 import sttp.client3.{HttpURLConnectionBackend, Request, Response, UriContext, basicRequest}
+import sttp.model.StatusCode
 
 class PortainerClient {
 
@@ -9,17 +10,18 @@ class PortainerClient {
   private val baseUrl = "http://portainer:9000/api"
 
   def useAPIs(): Unit = {
-      createUser()
-      val jwt = loginAngGetJwt()
-      val endpointId = createLocalEndpointAndGetId(jwt)
-      val imageToPull = "nginx:latest"
-      pullImage(jwt, endpointId, imageToPull)
-      val containerId = createContainerAndGetId(jwt, endpointId, imageToPull)
-      //startOrStopContainer(jwt, endpointId, containerId, containerShouldRun = true)
-      Thread.sleep(2000) // wait before deleting the container
-      startOrStopContainer(jwt, endpointId, containerId, containerShouldRun = false)
-      deleteContainer(jwt, endpointId, containerId)
-    }
+    createUser()
+    val jwt = loginAngGetJwt()
+    println("Jwt obtained from Portainer: " + jwt)
+    val endpointId = createLocalEndpointAndGetId(jwt)
+    val imageToPull = "nginx:latest"
+    pullImage(jwt, endpointId, imageToPull)
+    val containerId = createContainerAndGetId(jwt, endpointId, imageToPull)
+    Thread.sleep(2000) // wait before deleting the container
+    startOrStopContainer(jwt, endpointId, containerId, containerShouldRun = false)
+    val statusCode = deleteContainerAndGetStatus(jwt, endpointId, containerId)
+    println("Portainer final status code: " + statusCode) // prints a 204 success status if it's all ok
+  }
 
   private def createUser() =
     sendRequest(adminRequest.post(uri"$baseUrl/users/admin/init"))
@@ -68,11 +70,11 @@ class PortainerClient {
   private def getContainerHandlingUrl(endpointId: Int, containerId: String): String =
     s"${getContainersUrl(endpointId)}/$containerId"
 
-  private def deleteContainer(jwt: String, endpointId: Int, containerId: String): Unit = {
+  private def deleteContainerAndGetStatus(jwt: String, endpointId: Int, containerId: String): StatusCode = {
     val request = authorizedRequest(jwt).delete(uri"${getContainerHandlingUrl(endpointId, containerId)}")
     val response = sendRequest(request)
     if(!response.isSuccess) throw new IllegalStateException("Error when deleting container: " + response)
-    println("Portainer final status code is " + response.code) // prints a 204 success status if it's all ok
+    response.code
   }
 
 }

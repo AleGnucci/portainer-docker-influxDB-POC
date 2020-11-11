@@ -18,6 +18,8 @@ services:
   influx-client:
     build: ./influx-client
     container_name: "influx-client"
+    volumes: 
+      - "./influx-client/client-start.sh:/client-start.sh"
     depends_on: 
       - influx
       - portainer
@@ -29,3 +31,12 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     image: "portainer/portainer"
     container_name: "portainer"
+
+  #grafana:
+  #  ports:
+  #    - 3000:3000
+  #  image: grafana/grafana
+  #  container_name: grafana
+  #  logging:
+  #    driver: "none"
+    

@@ -9,6 +9,7 @@ import com.influxdb.query.dsl.Flux
 import com.influxdb.query.dsl.functions.restriction.Restrictions.measurement
 import influx.API.EnhancedV2API.Implicits._
 import influx.API.EnhancedV2API._
+import utils.Utils.Implicits._
 import utils.Utils.getRandom
 
 import scala.util.Random
@@ -49,7 +50,7 @@ class NewInfluxClient extends InfluxClient {
     val constructedQuery = Flux.from(bucket)
       .range(-1, ChronoUnit.DAYS)
       .filter(measurement().equal("temperature"))
-      .sample(10).toString
+      .sample(10)
     EnhancedFlux runAndPrint constructedQuery
 
     //creates a Task. Tasks replace InfluxDB v1.x continuous queries.
@@ -63,25 +64,29 @@ class NewInfluxClient extends InfluxClient {
     {influxClient.close(); influxScalaClient.close()}
   }
 
-  //FIXME: most of the data is null
   private def writeRandomPoints(bucket: String, organization: String)
                                (implicit queryApi: QueryScalaApi, writeApi: WriteApi, system: ActorSystem): Unit = {
-    def getRandomLocation = if (Random.nextBoolean()) "north" else "south"
     def getRandomMeasurement = if (Random.nextBoolean()) "temperature" else "humidity"
+    def getRandomLocation = if (Random.nextBoolean()) getEastOrWest else getNorthOrSouth
+    def getEastOrWest = if(Random.nextBoolean()) "east" else "west"
+    def getNorthOrSouth = if(Random.nextBoolean()) "north" else "south"
 
     val pointProducer = () => {
-      Thread.sleep(getRandom(0, 5).toLong) //this makes the point timestamps different from one another
+      Thread.sleep(250) //this makes the point timestamps different from one another
       s"$getRandomMeasurement,location=$getRandomLocation value=${getRandom(0, 100)}"
     }
-    writeApi.writePointsByProducer(bucket, organization, pointProducer, 100)
+    writeApi.writePointsByProducer(bucket, organization, pointProducer, 8)
   }
 
   private def waitAndCheckWrittenData(bucket: String)(implicit queryApi: QueryScalaApi, writeApi: WriteApi,
                                         system: ActorSystem): Unit = {
     writeApi.flush() //flush all pending writes to HTTP
-    Thread.sleep(5000) //wait for influx to finish writing before checking
-    println(s"Amount of points successfully written to $bucket: ")
-    EnhancedFlux runAndPrint Flux.from(bucket).range(-1, ChronoUnit.DAYS).count().toString
+    Thread.sleep(6000) //wait for influx to finish writing before checking
+    val query = Flux.from(bucket).range(-1, ChronoUnit.DAYS)
+    val pointCount = EnhancedFlux.runAsync(query)
+      .runFold(0)((accumulator, _) => accumulator + 1)
+      .awaitForTenSeconds
+    println(s"Amount of points successfully written to $bucket: $pointCount")
   }
 
 }

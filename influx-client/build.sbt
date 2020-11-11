@@ -14,6 +14,6 @@ libraryDependencies += "com.softwaremill.sttp.client3" %% "core" % "3.0.0-RC7" /
 libraryDependencies += "com.google.code.gson" % "gson" % "2.8.6" //json parsing
 libraryDependencies += "dev.zio" %% "zio" % "1.0.3" //better implementation of Future
 
-assemblyJarName in assembly := "ats-poc.jar"
+assemblyJarName in assembly := "ats-poc.jar" //to create this file simply run "sbt assembly"
 
 unmanagedSourceDirectories in Compile += file("influx-client/src")

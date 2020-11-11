@@ -7,6 +7,7 @@ import com.influxdb.client.domain.WritePrecision.MS
 import com.influxdb.client.scala.QueryScalaApi
 import com.influxdb.client.{OrganizationsApi, WriteApi}
 import com.influxdb.query.FluxRecord
+import com.influxdb.query.dsl.Flux
 import influx.API.EnhancedV2API.Implicits._
 import utils.Utils.Implicits.EnhancedFuture
 import zio._
@@ -22,6 +23,9 @@ object EnhancedV2API {
     def runAndPrintAll(queries: Seq[String])(implicit queryApi: QueryScalaApi, system: ActorSystem): Unit =
       runAndPrintAllAsync(queries).awaitForTenSeconds
 
+    def runAndPrint(query: Flux)(implicit queryApi: QueryScalaApi, system: ActorSystem): Unit =
+      runAndPrint(query.toString)
+
     def runAndPrint(query: String)(implicit queryApi: QueryScalaApi, system: ActorSystem): Unit =
       runAndPrintAsync(query).awaitForTenSeconds
 
@@ -36,16 +40,22 @@ object EnhancedV2API {
     def runAndPrintAsync(query: String)(implicit queryApi: QueryScalaApi, system: ActorSystem): Future[Unit] =
       queryApi.printQueryResultAsync(query)
 
+    def runAsync(query: Flux)(implicit queryApi: QueryScalaApi): Source[FluxRecord, NotUsed] = runAsync(query.toString)
+
     def runAsync(query: String)(implicit queryApi: QueryScalaApi): Source[FluxRecord, NotUsed] = queryApi.query(query)
   }
 
   object Implicits {
 
     implicit class CustomQueryApi(val queryApi: QueryScalaApi) {
-      def printQueryResultAsync(query: String)(implicit system: ActorSystem): Future[Unit] = { //extension method
+      def printQueryResultAsync(query: String, hideAdditionalInfo: Boolean = true)
+                               (implicit system: ActorSystem): Future[Unit] = { //extension method
         implicit val executionContext: ExecutionContext = system.dispatcher
-        queryApi.query(query).runForeach(record =>
-          println(record.getTime + ": " + record.getValueByKey("value"))).map(_ => ())
+        queryApi.query(query).runForeach(record => {
+          val values = Map.from(record.getValues.asScala)
+          val filteredValues = if(hideAdditionalInfo) values - "_start" - "_stop" - "result" else values
+          println(filteredValues.mkString(", "))
+        }).map(_ => ())
       }
     }
 
