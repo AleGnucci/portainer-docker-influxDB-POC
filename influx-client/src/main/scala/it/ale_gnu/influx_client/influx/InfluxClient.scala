@@ -1,4 +1,4 @@
-package influx
+package it.ale_gnu.influx_client.influx
 
 trait InfluxClient {
 

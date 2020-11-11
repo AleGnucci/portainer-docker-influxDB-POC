@@ -1,22 +1,23 @@
-package influx.API
+package it.ale_gnu.influx_client.influx.new_api.api
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.Source
+import akka.stream.Materializer
+import akka.stream.scaladsl.{Sink, Source}
 import com.influxdb.client.domain.WritePrecision.MS
 import com.influxdb.client.scala.QueryScalaApi
 import com.influxdb.client.{OrganizationsApi, WriteApi}
 import com.influxdb.query.FluxRecord
 import com.influxdb.query.dsl.Flux
-import influx.API.EnhancedV2API.Implicits._
-import utils.Utils.Implicits.EnhancedFuture
+import EnhancedV2API.Implicits._
+import it.ale_gnu.influx_client.utils.Utils.Implicits.EnhancedFuture
 import zio._
 import zio.console.putStrLn
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
 
-object EnhancedV2API {
+private[new_api] object EnhancedV2API {
 
   object EnhancedFlux {
 
@@ -31,7 +32,7 @@ object EnhancedV2API {
 
     def runAndPrintAllAsync(queries: Seq[String])
                            (implicit queryApi: QueryScalaApi, system: ActorSystem): Future[Unit] = {
-      val codeToRun = ZIO.foreach(queries) {query => //sequentially runs all the queries
+      val codeToRun = ZIO.foreach(queries) {query => //sequentially runs all the queries (using "traverse" operation)
         putStrLn(s"query ${queries.indexOf(query)}:") *> ZIO.fromFuture(_ => runAndPrintAsync(query))
       }.unit
       Runtime.default.unsafeRunToFuture(codeToRun)
@@ -39,6 +40,13 @@ object EnhancedV2API {
 
     def runAndPrintAsync(query: String)(implicit queryApi: QueryScalaApi, system: ActorSystem): Future[Unit] =
       queryApi.printQueryResultAsync(query)
+
+    def run(query: Flux)(implicit queryApi: QueryScalaApi,system: ActorSystem): Seq[FluxRecord] = run(query.toString)
+
+    def run(query: String)(implicit queryApi: QueryScalaApi,system: ActorSystem): Seq[FluxRecord] = {
+      implicit val materializer: Materializer = Materializer(system)
+      runAsync(query).runWith(Sink.collection[FluxRecord, Seq[FluxRecord]]).awaitForTenSeconds
+    }
 
     def runAsync(query: Flux)(implicit queryApi: QueryScalaApi): Source[FluxRecord, NotUsed] = runAsync(query.toString)
 

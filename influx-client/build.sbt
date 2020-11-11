@@ -1,4 +1,4 @@
-name := "influx-client"
+name := "it.ale_gnu.influx_client.influx-client"
 
 version := "0.1"
 
@@ -16,4 +16,4 @@ libraryDependencies += "dev.zio" %% "zio" % "1.0.3" //better implementation of F
 
 assemblyJarName in assembly := "ats-poc.jar" //to create this file simply run "sbt assembly"
 
-unmanagedSourceDirectories in Compile += file("influx-client/src")
+unmanagedSourceDirectories in Compile += file("it.ale_gnu.influx_client.influx-client/src")

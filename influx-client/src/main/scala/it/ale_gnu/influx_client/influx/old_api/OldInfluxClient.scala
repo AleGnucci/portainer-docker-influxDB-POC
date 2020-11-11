@@ -1,10 +1,11 @@
-package influx
+package it.ale_gnu.influx_client.influx.old_api
 
 import java.util.concurrent.TimeUnit
 
+import it.ale_gnu.influx_client.influx.InfluxClient
 import org.influxdb.dto.{Point, Query, QueryResult}
 import org.influxdb.{BatchOptions, InfluxDB, InfluxDBFactory}
-import utils.Utils.getRandom
+import it.ale_gnu.influx_client.utils.Utils.getRandom
 
 import scala.util.Random
 
@@ -12,24 +13,24 @@ import scala.util.Random
 class OldInfluxClient extends InfluxClient  {
 
   def runExamples(): Unit = {
-    val (serverURL, username, password) = ("http://influx:8086", "root", "root");
-    val influxDB = InfluxDBFactory.connect(serverURL, username, password);
+    val (serverURL, username, password) = ("http://influx:8086", "root", "root")
+    val influxDB = InfluxDBFactory.connect(serverURL, username, password)
 
     // Create a database...
-    val databaseName = "NOAA_water_database";
-    influxDB.query(new Query("CREATE DATABASE " + databaseName));
-    influxDB.setDatabase(databaseName);
+    val databaseName = "NOAA_water_database"
+    influxDB.query(new Query("CREATE DATABASE " + databaseName))
+    influxDB.setDatabase(databaseName)
 
     // ... and a retention policy
-    val retentionPolicyName = "one_day_only";
+    val retentionPolicyName = "one_day_only"
     influxDB.query(new Query("CREATE RETENTION POLICY " + retentionPolicyName
-      + " ON " + databaseName + " DURATION 1d REPLICATION 1 DEFAULT"));
-    influxDB.setRetentionPolicy(retentionPolicyName);
+      + " ON " + databaseName + " DURATION 1d REPLICATION 1 DEFAULT"))
+    influxDB.setRetentionPolicy(retentionPolicyName)
 
     // Enable batch writes to get better performance.
-    influxDB.enableBatch(BatchOptions.DEFAULTS);
+    influxDB.enableBatch(BatchOptions.DEFAULTS)
 
-    // Write points to InfluxDB.
+    // Write points to InfluxDB
     writeRandomPoints(influxDB)
 
     // query setup
@@ -61,7 +62,7 @@ class OldInfluxClient extends InfluxClient  {
     println("continuous query's result:")
     printQueryResult("SELECT * FROM mean_water_level ")
 
-    influxDB.close();
+    influxDB.close()
   }
 
   private def writeRandomPoints(influxDB: InfluxDB): Unit = {
@@ -73,7 +74,7 @@ class OldInfluxClient extends InfluxClient  {
         .tag("location", if(Random.nextBoolean()) "santa_monica" else "coyote_creek")
         .addField("level_description", if(waterLevel < 3) "below 3 feet" else "between 6 and 9 feet")
         .addField("water_level", waterLevel)
-        .build());
+        .build())
     }
   }
 }

@@ -5,15 +5,16 @@ services:
     environment:
       - INFLUXDB_ADMIN_USER=root
       - INFLUXDB_ADMIN_USER_PASSWORD=root
+      - INFLUXDB_HTTP_FLUX_ENABLED=true
     ports:
       - "8086:8086"
       - "9999:9999"
-    image: "quay.io/influxdb/influxdb:2.0.0-rc"
+    image: "influxdb:1.8" #or quay.io/influxdb/influxdb:2.0.0-rc
     volumes: 
-      - "./influx-start.sh:/influx-start.sh"
+      - "./influx2-start.sh:/influx2-start.sh"
     container_name: "influx"
-    command: 
-      - /influx-start.sh
+    #command: 
+    #  - /influx2-start.sh
     
   influx-client:
     build: ./influx-client
