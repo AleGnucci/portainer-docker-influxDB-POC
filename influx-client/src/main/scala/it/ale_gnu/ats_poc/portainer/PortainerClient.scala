@@ -1,4 +1,4 @@
-package it.ale_gnu.influx_client.portainer
+package it.ale_gnu.ats_poc.portainer
 
 import com.google.gson.JsonParser
 import sttp.client3.{HttpURLConnectionBackend, Request, Response, UriContext, basicRequest}

@@ -1,17 +1,18 @@
-package it.ale_gnu.influx_client.influx.new_api
+package it.ale_gnu.ats_poc.influx.new_api
 
 import java.time.temporal.ChronoUnit
 
 import akka.actor.ActorSystem
 import com.influxdb.client.{InfluxDBClient, WriteApi}
+import com.influxdb.client.domain.WritePrecision
 import com.influxdb.client.scala.QueryScalaApi
+import com.influxdb.client.write.Point
 import com.influxdb.query.dsl.Flux
-import it.ale_gnu.influx_client.influx.new_api.api.EnhancedV2API.EnhancedFlux
-import it.ale_gnu.influx_client.influx.new_api.api.EnhancedV2API.EnhancedFlux
-import it.ale_gnu.influx_client.influx.new_api.api.EnhancedV2API.Implicits.CustomWriteApi
-import it.ale_gnu.influx_client.influx.new_api.api.EnhancedV2API.EnhancedFlux
-import it.ale_gnu.influx_client.utils.Utils.Implicits.EnhancedFuture
-import it.ale_gnu.influx_client.utils.Utils.getRandom
+import it.ale_gnu.ats_poc.influx.new_api.api.EnhancedV2Api.Implicits.CustomWriteApi
+import it.ale_gnu.ats_poc.influx.new_api.api.EnhancedV2Api.EnhancedFlux
+import it.ale_gnu.ats_poc.utils.Utils.Implicits.EnhancedFuture
+import it.ale_gnu.ats_poc.utils.Utils.getRandom
+import java.time.Instant
 
 import scala.util.{Random, Try}
 
@@ -26,7 +27,9 @@ private[new_api] object ClientHelper {
 
     val pointProducer = () => {
       Thread.sleep(250) //this makes the point timestamps different from one another
-      s"$getRandomMeasurement,location=$getRandomLocation value=${getRandom(0, 100)}"
+      Point.measurement(getRandomMeasurement)
+        .addTag("location", getRandomLocation).addField("value", getRandom(0, 100))
+        .time(Instant.now.toEpochMilli, WritePrecision.MS)
     }
     writeApi.writePointsByProducer(bucket, organization, pointProducer, 8)
   }
@@ -34,7 +37,7 @@ private[new_api] object ClientHelper {
   def waitAndCheckWrittenData(bucket: String)(implicit queryApi: QueryScalaApi, writeApi: WriteApi,
                                                       system: ActorSystem): Unit = {
     writeApi.flush() //flush all pending writes to HTTP
-    Thread.sleep(6000) //wait for it.ale_gnu.influx_client.influx to finish writing before checking
+    Thread.sleep(6000) //wait for influx to finish writing before checking
     val query = Flux.from(bucket).range(-1, ChronoUnit.DAYS)
     val pointCount = EnhancedFlux.runAsync(query)
       .runFold(0)((accumulator, _) => accumulator + 1)

@@ -1,11 +1,12 @@
-package it.ale_gnu.influx_client.influx.old_api
+package it.ale_gnu.ats_poc.influx.old_api
 
 import java.util.concurrent.TimeUnit
 
-import it.ale_gnu.influx_client.influx.InfluxClient
-import org.influxdb.dto.{Point, Query, QueryResult}
+import it.ale_gnu.ats_poc.influx.InfluxClient
+import it.ale_gnu.ats_poc.influx.old_api.api.EnhancedApi._
+import it.ale_gnu.ats_poc.utils.Utils.getRandom
+import org.influxdb.dto.{Point, Query}
 import org.influxdb.{BatchOptions, InfluxDB, InfluxDBFactory}
-import it.ale_gnu.influx_client.utils.Utils.getRandom
 
 import scala.util.Random
 
@@ -14,7 +15,7 @@ class OldInfluxClient extends InfluxClient  {
 
   def runExamples(): Unit = {
     val (serverURL, username, password) = ("http://influx:8086", "root", "root")
-    val influxDB = InfluxDBFactory.connect(serverURL, username, password)
+    implicit val influxDB = InfluxDBFactory.connect(serverURL, username, password)
 
     // Create a database...
     val databaseName = "NOAA_water_database"
@@ -32,10 +33,6 @@ class OldInfluxClient extends InfluxClient  {
 
     // Write points to InfluxDB
     writeRandomPoints(influxDB)
-
-    // query setup
-    def printQueryResult(query: String): Unit = System.out.println(runQuery(query))
-    def runQuery(query: String): QueryResult = influxDB.query(new Query(query))
 
     //continuous query that saves to "mean_water_level"
     runQuery(s"""CREATE CONTINUOUS QUERY "cq_mean_water_level" ON "$databaseName"

@@ -1,4 +1,4 @@
-package it.ale_gnu.influx_client.influx.new_api
+package it.ale_gnu.ats_poc.influx.new_api
 
 import java.time.temporal.ChronoUnit
 
@@ -7,14 +7,19 @@ import com.influxdb.client.InfluxDBClientFactory
 import com.influxdb.client.scala.InfluxDBClientScalaFactory
 import com.influxdb.query.dsl.Flux
 import com.influxdb.query.dsl.functions.restriction.Restrictions.measurement
-import it.ale_gnu.influx_client.influx.new_api.api.EnhancedV2API.Implicits._
-import it.ale_gnu.influx_client.influx.new_api.api.EnhancedV2API._
+import it.ale_gnu.ats_poc.influx.new_api.api.EnhancedV2Api.Implicits._
+import it.ale_gnu.ats_poc.influx.new_api.api.EnhancedV2Api._
 import org.influxdb.InfluxDBFactory
 import org.influxdb.dto.Query
 import ClientHelper._
-import it.ale_gnu.influx_client.influx.InfluxClient
+import it.ale_gnu.ats_poc.influx.InfluxClient
 
-/** Unfinished class, can be used to test the 2.x Influx APIs. Supports both InfluxDB 2.0 and 1.8. */
+/** Class containing examples of the 2.x Influx APIs. Supports both InfluxDB 2.0 and 1.8.
+ *  Current issues with Flux:
+ *
+ *    - https://github.com/influxdata/influxdb/issues/18088 Performance difference between Flux and InfluxQL
+ *    - https://community.influxdata.com/t/aggregatewindow-extremely-slow-and-memory-hungry/11635
+ * */
 class NewInfluxClient extends InfluxClient {
 
   private val (url, token, bucket, org) = ("http://influx:8086", "my-token", "my-bucket", "my-org")

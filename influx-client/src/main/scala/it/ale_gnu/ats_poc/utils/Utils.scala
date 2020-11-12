@@ -1,4 +1,4 @@
-package it.ale_gnu.influx_client.utils
+package it.ale_gnu.ats_poc.utils
 
 import java.util.concurrent.ThreadLocalRandom
 

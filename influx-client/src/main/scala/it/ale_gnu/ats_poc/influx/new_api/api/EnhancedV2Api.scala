@@ -1,23 +1,23 @@
-package it.ale_gnu.influx_client.influx.new_api.api
+package it.ale_gnu.ats_poc.influx.new_api.api
 
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
-import com.influxdb.client.domain.WritePrecision.MS
 import com.influxdb.client.scala.QueryScalaApi
+import com.influxdb.client.write.Point
 import com.influxdb.client.{OrganizationsApi, WriteApi}
 import com.influxdb.query.FluxRecord
 import com.influxdb.query.dsl.Flux
-import EnhancedV2API.Implicits._
-import it.ale_gnu.influx_client.utils.Utils.Implicits.EnhancedFuture
+import it.ale_gnu.ats_poc.influx.new_api.api.EnhancedV2Api.Implicits._
+import it.ale_gnu.ats_poc.utils.Utils.Implicits.EnhancedFuture
 import zio._
 import zio.console.putStrLn
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
 
-private[new_api] object EnhancedV2API {
+private[new_api] object EnhancedV2Api {
 
   object EnhancedFlux {
 
@@ -70,8 +70,8 @@ private[new_api] object EnhancedV2API {
     implicit class CustomWriteApi(val writeApi: WriteApi) {
       // writes random points using line protocol
       def writePointsByProducer(bucket: String, organization: String,
-                                linePointProducer: () => String, count: Int): Unit =
-        for (_ <- 1 to count) writeApi.writeRecord(bucket, organization, MS, linePointProducer())
+                                linePointProducer: () => Point, count: Int): Unit =
+        for (_ <- 1 to count) writeApi.writePoint(bucket, organization, linePointProducer())
     }
 
     implicit class CustomOrganizationsApi(val organizationsApi: OrganizationsApi) {
